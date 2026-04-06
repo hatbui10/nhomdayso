@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool Dual View: Inverse & Highlight</title>
+    <title>Tool Dual View: Pattern Analysis</title>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -31,19 +31,17 @@
             gap: 15px; border: 1px solid #333; flex-wrap: wrap;
         }
 
-        /* Ẩn Textarea nhập liệu */
         #inputText { display: none; }
 
-        /* KHU VỰC HIỂN THỊ SONG SONG (2 CỘT) */
         .display-box { 
             width: 100%; 
             display: grid; 
-            grid-template-columns: 1fr 1fr; /* Chia làm 2 cột bằng nhau */
+            grid-template-columns: 1fr 1fr; 
             gap: 10px;
         }
 
         .output-panel { 
-            height: calc(100vh - 180px); /* Chiều cao cố định */
+            height: calc(100vh - 200px); 
             padding: 15px; 
             border-radius: 8px; 
             border: 1px solid #444; 
@@ -59,31 +57,33 @@
             line-height: 2.3;
         }
 
-        /* --- MÀU 1: HIGHLIGHT SỐ GỐC (Như ảnh bạn gửi) --- */
-        #highlightOutput { border-color: #bb86fc; } /* Viền màu tím */
-        .mark-orig-Ab { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Vàng cho số gốc */
-        .mark-orig-bA { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Xanh cho số gốc */
+        /* --- MÀU 1: XEN KẼ (Ab/bA) --- */
+        #alternatingOutput { border-color: #bb86fc; }
+        .mark-Ab { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
+        .mark-bA { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
 
-        /* --- MÀU 2: CHUỖI BAO PHỦ NGHỊCH ĐẢO (Như lúc trước) --- */
-        #inverseOutput { border-color: #03dac6; } /* Viền màu xanh ngọc */
-        .cover-A { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Phủ vàng */
-        .cover-b { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Phủ xanh */
-        .cover-mix { border-bottom: 2px solid #ff4444; color: #ff4444; font-weight: bold; display: inline-block; line-height: 1.2; } /* Phủ xen kẽ */
+        /* --- MÀU 2: ĐỒNG NHẤT (AAA/bbb) --- */
+        #homogeneousOutput { border-color: #03dac6; }
+        .mark-AAA { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
+        .mark-bbb { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
 
         .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
         button, .file-label { 
             padding: 10px 20px; cursor: pointer; border: none; 
             border-radius: 6px; background: #3700b3; color: white; 
-            font-weight: bold; font-size: 14px;
+            font-weight: bold; font-size: 13px;
         }
         
-        .btn-gen { background: #03dac6; color: #000; }
+        .btn-alt { background: #bb86fc; color: #000; }
+        .btn-homo { background: #03dac6; color: #000; }
         .btn-download { background: #cf6679; }
 
+        input[type="number"] {
+            padding: 5px; width: 60px; border-radius: 4px; border: 1px solid #444; background: #2c2c2c; color: #fff; text-align: center;
+        }
         input[type="file"] { display: none; }
-        label { font-size: 12px; color: #aaa; margin-right: 5px;}
-        .dot { height: 10px; width: 10px; display: inline-block; border-radius: 50%; margin-right: 5px; }
+        label { font-size: 13px; color: #aaa; }
     </style>
 </head>
 <body>
@@ -92,10 +92,15 @@
 
 <div class="container">
     <div class="config-bar">
-        <label>Độ dài lọc số gốc (Highlight):</label>
-        <input type="number" id="minLengthH" value="4" min="2" oninput="processHighlight()" style="padding: 5px; width: 60px; border-radius: 4px; border: 1px solid #bb86fc; background: #2c2c2c; color: #fff; text-align: center; margin-right: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label>Độ dài lọc ≥</label>
+            <input type="number" id="minLength" value="4" min="2" oninput="autoRefresh()">
+        </div>
         
-        <button class="btn-gen" style="margin-left:auto" onclick="processAll()">🔄 CẬP NHẬT CẢ HAI</button>
+        <div style="margin-left: auto; display: flex; gap: 10px;">
+            <button class="btn-alt" onclick="processAlternating()">✨ TÔ MÀU Ab/bA</button>
+            <button class="btn-homo" onclick="processHomogeneous()">📊 TÔ MÀU AAA/bbb</button>
+        </div>
     </div>
     
     <textarea id="inputText"></textarea>
@@ -108,22 +113,22 @@
 
     <div class="display-box">
         <div>
-            <div style="font-size: 12px; color: #03dac6; font-weight: bold; margin-bottom: 3px;">1. CHUỖI BAO PHỦ (NGHỊCH ĐẢO)</div>
-            <div id="inverseOutput" class="output-panel">Kết quả bao phủ sẽ hiển thị ở đây...</div>
+            <div style="font-size: 12px; color: #bb86fc; font-weight: bold; margin-bottom: 3px;">1. DÃY XEN KẼ (Ab / bA)</div>
+            <div id="alternatingOutput" class="output-panel"></div>
         </div>
         
         <div>
-            <div style="font-size: 12px; color: #bb86fc; font-weight: bold; margin-bottom: 3px;">2. HIGHLIGHT SỐ GỐC (PATTERN Ab)</div>
-            <div id="highlightOutput" class="output-panel">Dãy số gốc đã soi màu sẽ hiển thị ở đây...</div>
+            <div style="font-size: 12px; color: #03dac6; font-weight: bold; margin-bottom: 3px;">2. DÃY ĐỒNG NHẤT (AAA / bbb)</div>
+            <div id="homogeneousOutput" class="output-panel"></div>
         </div>
     </div>
 </div>
 
 <script>
     const inputEl = document.getElementById('inputText');
-    const invOutputEl = document.getElementById('inverseOutput');
-    const highOutputEl = document.getElementById('highlightOutput');
-    const minLengthHEl = document.getElementById('minLengthH');
+    const altOutputEl = document.getElementById('alternatingOutput');
+    const homoOutputEl = document.getElementById('homogeneousOutput');
+    const minLenEl = document.getElementById('minLength');
     const infoBadge = document.getElementById('file-info-badge');
 
     const isA = (c) => /[0-9]/.test(c) && parseInt(c) >= 5;
@@ -133,98 +138,84 @@
         infoBadge.innerHTML = `Dữ liệu: ${count.toLocaleString()} số`;
     }
 
-    // --- 1. THUẬT TOÁN BAO PHỦ NGHỊCH ĐẢO (MÀU XANH NGỌC) ---
-    function processInverseLogic() {
-        const text = inputEl.value.replace(/[^0-9]/g, '');
-        if (!text) { invOutputEl.innerHTML = ""; return; }
-
-        let resultHTML = "";
-        let i = 0;
-
-        while (i < text.length) {
-            let currA = isA(text[i]);
-            let hasNext = i + 1 < text.length;
-            let nextA = hasNext ? isA(text[i+1]) : currA;
-
-            if (hasNext && currA !== nextA) {
-                let start = i;
-                while (i + 1 < text.length && isA(text[i]) !== isA(text[i+1])) { i++; }
-                i++;
-                let len = i - start;
-                let fillChar = currA ? "A" : "b";
-                let fillClass = currA ? "cover-A" : "cover-b";
-                resultHTML += `<span class="${fillClass}">${fillChar.repeat(len)}</span>`;
-            } 
-            else {
-                let start = i;
-                while (i + 1 < text.length && isA(text[i]) === isA(text[i+1])) { i++; }
-                i++;
-                let len = i - start;
-                let mixStr = "";
-                for (let k = 0; k < len; k++) { mixStr += (k % 2 === 0) ? "A" : "b"; }
-                resultHTML += `<span class="cover-mix">${mixStr}</span>`;
-            }
+    // Tự động làm mới khi đổi số ở ô Độ dài
+    function autoRefresh() {
+        if (inputEl.value) {
+            processAlternating();
+            processHomogeneous();
         }
-        invOutputEl.innerHTML = resultHTML;
     }
 
-    // --- 2. THUẬT TOÁN HIGHLIGHT SỐ GỐC (MÀU TÍM) ---
-    function processHighlight() {
+    // 1. Logic Tô màu Ab/bA (Xen kẽ)
+    function processAlternating() {
         const text = inputEl.value;
-        const countText = text.replace(/[^0-9]/g, '');
-        if (!countText) { highOutputEl.innerHTML = ""; return; }
-        
-        updateBadge(countText);
-        const minLen = parseInt(minLengthHEl.value) || 4;
+        const minLen = parseInt(minLenEl.value) || 4;
         let resultHTML = "";
         let i = 0;
 
         while (i < text.length) {
-            let currA = isA(text[i]);
-            // Nếu không phải số (khoảng trắng/xuống dòng), giữ nguyên
-            if (!/[0-9]/.test(text[i])) { 
-                resultHTML += text[i++]; 
-                continue; 
-            }
+            if (!/[0-9]/.test(text[i])) { resultHTML += text[i++]; continue; }
 
-            let startType = currA ? 'A' : 'b';
             let j = i;
             let temp = text[i];
-            let lastA = currA;
+            let lastIsA = isA(text[i]);
 
-            // Tìm cụm xen kẽ
-            while (j + 1 < text.length) {
-                if (!/[0-9]/.test(text[j + 1])) break; // Gặp ký tự lạ thì dừng cụm
-                let nextA = isA(text[j + 1]);
-                if (nextA === lastA) break;
+            while (j + 1 < text.length && /[0-9]/.test(text[j + 1])) {
+                let nextIsA = isA(text[j + 1]);
+                if (nextIsA === lastIsA) break;
                 temp += text[++j];
-                lastA = nextA;
+                lastIsA = nextIsA;
             }
 
             if (temp.length >= minLen) {
-                let className = currA ? 'mark-orig-Ab' : 'mark-orig-bA';
+                let className = isA(text[i]) ? 'mark-Ab' : 'mark-bA';
                 resultHTML += `<span class="${className}">${temp}</span>`;
                 i = j + 1;
             } else {
                 resultHTML += text[i++];
             }
         }
-        highOutputEl.innerHTML = resultHTML;
+        altOutputEl.innerHTML = resultHTML;
+        updateBadge(text);
     }
 
-    function processAll() {
-        processInverseLogic();
-        processHighlight();
-        localStorage.setItem('saved_dual_data_v1', inputEl.value);
+    // 2. Logic Tô màu AAA/bbb (Đồng nhất)
+    function processHomogeneous() {
+        const text = inputEl.value;
+        const minLen = parseInt(minLenEl.value) || 4;
+        let resultHTML = "";
+        let i = 0;
+
+        while (i < text.length) {
+            if (!/[0-9]/.test(text[i])) { resultHTML += text[i++]; continue; }
+
+            let j = i;
+            let temp = text[i];
+            let currentIsA = isA(text[i]);
+
+            while (j + 1 < text.length && /[0-9]/.test(text[j + 1])) {
+                if (isA(text[j + 1]) !== currentIsA) break;
+                temp += text[++j];
+            }
+
+            if (temp.length >= minLen) {
+                let className = currentIsA ? 'mark-AAA' : 'mark-bbb';
+                resultHTML += `<span class="${className}">${temp}</span>`;
+                i = j + 1;
+            } else {
+                resultHTML += text[i++];
+            }
+        }
+        homoOutputEl.innerHTML = resultHTML;
     }
 
     function clearAll() {
         if(confirm("Xóa sạch dữ liệu?")) {
             inputEl.value = "";
-            invOutputEl.innerHTML = "";
-            highOutputEl.innerHTML = "";
+            altOutputEl.innerHTML = "";
+            homoOutputEl.innerHTML = "";
             updateBadge("");
-            localStorage.removeItem('saved_dual_data_v1');
+            localStorage.removeItem('saved_dual_tool_data');
         }
     }
 
@@ -233,7 +224,7 @@
         const blob = new Blob([inputEl.value], { type: 'text/plain' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = "du_lieu_dual.txt";
+        link.download = "data_analysis.txt";
         link.click();
     }
 
@@ -243,25 +234,23 @@
             const r = new FileReader();
             r.onload = (ev) => { 
                 inputEl.value = ev.target.result; 
-                processAll(); 
+                processAlternating();
+                processHomogeneous();
+                localStorage.setItem('saved_dual_tool_data', inputEl.value);
             };
             r.readAsText(f);
         }
     });
 
-    // Tự cập nhật khi chỉnh độ dài highlight
-    function updateHighlightOnly() {
-        processHighlight();
-        localStorage.setItem('saved_dual_data_v1', inputEl.value);
-    }
-
     window.onload = () => {
-        const saved = localStorage.getItem('saved_dual_data_v1');
+        const saved = localStorage.getItem('saved_dual_tool_data');
         if (saved) {
             inputEl.value = saved;
-            processAll();
+            processAlternating();
+            processHomogeneous();
         }
     };
 </script>
 </body>
 </html>
+
