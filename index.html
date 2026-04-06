@@ -3,227 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Highlight Ab/bA - Fixed Status</title>
+    <title>Tool Dual View: Inverse & Highlight</title>
     <style>
-        /* Dark Mode & Căn lề: Trên 20px, 2 biên 3px */
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background-color: #121212; 
             color: #e0e0e0; 
             margin: 20px 3px 0 3px; 
             padding: 0;
+            overflow-x: hidden;
         }
 
-        .container { max-width: 100%; margin: 0 auto; }
+        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
 
-        /* Thông báo cố định ở góc trên bên phải */
         #file-info-badge {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #2c2c2c;
-            color: #03dac6;
-            padding: 8px 15px;
-            border-radius: 6px;
-            border: 1px solid #03dac6;
-            font-size: 13px;
-            font-weight: bold;
-            z-index: 1000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            position: fixed; top: 10px; right: 10px;
+            background: #2c2c2c; color: #03dac6;
+            padding: 8px 15px; border-radius: 6px;
+            border: 1px solid #03dac6; font-size: 13px;
+            font-weight: bold; z-index: 1000;
         }
 
         .config-bar {
-            background: #1e1e1e;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border: 1px solid #333;
+            background: #1e1e1e; padding: 10px;
+            border-radius: 8px; margin-bottom: 10px;
+            display: flex; align-items: center;
+            gap: 15px; border: 1px solid #333; flex-wrap: wrap;
         }
 
-        input[type="number"] {
-            width: 60px;
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #bb86fc;
-            background: #2c2c2c;
-            color: #fff;
-            text-align: center;
-            font-weight: bold;
+        /* Ẩn Textarea nhập liệu */
+        #inputText { display: none; }
+
+        /* KHU VỰC HIỂN THỊ SONG SONG (2 CỘT) */
+        .display-box { 
+            width: 100%; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; /* Chia làm 2 cột bằng nhau */
+            gap: 10px;
         }
 
-        textarea { 
-            width: 100%; height: 180px; margin-bottom: 10px; padding: 12px; 
-            border-radius: 8px; border: 1px solid #333; 
-            background-color: #1e1e1e; color: #ffffff;
-            box-sizing: border-box; font-size: 16px; outline: none;
+        .output-panel { 
+            height: calc(100vh - 180px); /* Chiều cao cố định */
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid #444; 
+            background-color: #181818; 
+            color: #ffffff;
+            box-sizing: border-box; 
+            font-size: 18px; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            word-break: break-all; 
+            white-space: pre-wrap;
+            letter-spacing: 2px; 
+            line-height: 2.3;
         }
-        textarea:focus { border-color: #bb86fc; }
 
-        .controls { margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        /* --- MÀU 1: HIGHLIGHT SỐ GỐC (Như ảnh bạn gửi) --- */
+        #highlightOutput { border-color: #bb86fc; } /* Viền màu tím */
+        .mark-orig-Ab { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Vàng cho số gốc */
+        .mark-orig-bA { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Xanh cho số gốc */
 
-        #output { 
-            background: #1e1e1e; padding: 15px; border: 1px solid #444; 
-            border-radius: 8px; min-height: 120px; 
-            white-space: pre-wrap; word-wrap: break-word; color: #cfcfcf;
-            font-size: 18px; letter-spacing: 2px; line-height: 2;
-        }
+        /* --- MÀU 2: CHUỖI BAO PHỦ NGHỊCH ĐẢO (Như lúc trước) --- */
+        #inverseOutput { border-color: #03dac6; } /* Viền màu xanh ngọc */
+        .cover-A { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Phủ vàng */
+        .cover-b { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; } /* Phủ xanh */
+        .cover-mix { border-bottom: 2px solid #ff4444; color: #ff4444; font-weight: bold; display: inline-block; line-height: 1.2; } /* Phủ xen kẽ */
 
-        .mark-Ab { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; }
-        .mark-bA { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; }
+        .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
         button, .file-label { 
-            padding: 8px 15px; cursor: pointer; border: none; 
+            padding: 10px 20px; cursor: pointer; border: none; 
             border-radius: 6px; background: #3700b3; color: white; 
-            font-weight: bold; font-size: 13px;
+            font-weight: bold; font-size: 14px;
         }
         
+        .btn-gen { background: #03dac6; color: #000; }
         .btn-download { background: #cf6679; }
 
         input[type="file"] { display: none; }
-        .legend { font-size: 13px; opacity: 0.9; display: flex; gap: 10px; }
+        label { font-size: 12px; color: #aaa; margin-right: 5px;}
         .dot { height: 10px; width: 10px; display: inline-block; border-radius: 50%; margin-right: 5px; }
     </style>
 </head>
 <body>
 
-<div id="file-info-badge">Trạng thái: Chưa có dữ liệu</div>
+<div id="file-info-badge">Dữ liệu: 0 số</div>
 
 <div class="container">
     <div class="config-bar">
-        <label for="minLength">Độ dài lọc ≥ </label>
-        <input type="number" id="minLength" value="6" min="2" oninput="processText()">
+        <label>Độ dài lọc số gốc (Highlight):</label>
+        <input type="number" id="minLengthH" value="4" min="2" oninput="processHighlight()" style="padding: 5px; width: 60px; border-radius: 4px; border: 1px solid #bb86fc; background: #2c2c2c; color: #fff; text-align: center; margin-right: 15px;">
         
-        <div class="legend">
-            <span><span class="dot" style="background: #ffff00;"></span>Ab</span>
-            <span><span class="dot" style="background: #00bfff;"></span>bA</span>
-        </div>
+        <button class="btn-gen" style="margin-left:auto" onclick="processAll()">🔄 CẬP NHẬT CẢ HAI</button>
     </div>
     
-    <textarea id="inputText" placeholder="Dán dãy số hoặc mở file..."></textarea>
+    <textarea id="inputText"></textarea>
 
     <div class="controls">
-        <label class="file-label">Mở file .txt <input type="file" id="fileInput" accept=".txt"></label>
-        <button class="btn-download" onclick="downloadFile()">Tải file</button>
-        <button onclick="clearData()" style="background: #444;">Xóa hết</button>
+        <label class="file-label">📁 CHỌN FILE .TXT <input type="file" id="fileInput" accept=".txt"></label>
+        <button class="btn-download" onclick="downloadFile()">💾 LƯU FILE</button>
+        <button onclick="clearAll()" style="background: #444;">🗑️ XÓA DỮ LIỆU</button>
     </div>
 
-    <div id="output"></div>
+    <div class="display-box">
+        <div>
+            <div style="font-size: 12px; color: #03dac6; font-weight: bold; margin-bottom: 3px;">1. CHUỖI BAO PHỦ (NGHỊCH ĐẢO)</div>
+            <div id="inverseOutput" class="output-panel">Kết quả bao phủ sẽ hiển thị ở đây...</div>
+        </div>
+        
+        <div>
+            <div style="font-size: 12px; color: #bb86fc; font-weight: bold; margin-bottom: 3px;">2. HIGHLIGHT SỐ GỐC (PATTERN Ab)</div>
+            <div id="highlightOutput" class="output-panel">Dãy số gốc đã soi màu sẽ hiển thị ở đây...</div>
+        </div>
+    </div>
 </div>
 
 <script>
     const inputEl = document.getElementById('inputText');
-    const minLengthEl = document.getElementById('minLength');
+    const invOutputEl = document.getElementById('inverseOutput');
+    const highOutputEl = document.getElementById('highlightOutput');
+    const minLengthHEl = document.getElementById('minLengthH');
     const infoBadge = document.getElementById('file-info-badge');
 
-    function getType(char) {
-        if (!/[0-9]/.test(char)) return null;
-        return parseInt(char) >= 5 ? 'A' : 'b';
-    }
+    const isA = (c) => /[0-9]/.test(c) && parseInt(c) >= 5;
 
-    // Cập nhật thông báo số lượng ký tự
     function updateBadge(text) {
-        // Chỉ đếm các con số, bỏ qua khoảng trắng/xuống dòng nếu muốn đếm chính xác số lượng dữ liệu
-        const count = text.replace(/\s/g, '').length; 
-        if (count > 0) {
-            infoBadge.innerHTML = `Đã tải file: ${count.toLocaleString()} số`;
-            infoBadge.style.color = "#03dac6";
-            infoBadge.style.borderColor = "#03dac6";
-        } else {
-            infoBadge.innerHTML = `Trạng thái: Trống`;
-            infoBadge.style.color = "#888";
-            infoBadge.style.borderColor = "#444";
-        }
+        const count = text.replace(/[^0-9]/g, '').length;
+        infoBadge.innerHTML = `Dữ liệu: ${count.toLocaleString()} số`;
     }
 
-    function processText() {
-        const text = inputEl.value;
-        const output = document.getElementById('output');
-        const minLen = parseInt(minLengthEl.value) || 4;
+    // --- 1. THUẬT TOÁN BAO PHỦ NGHỊCH ĐẢO (MÀU XANH NGỌC) ---
+    function processInverseLogic() {
+        const text = inputEl.value.replace(/[^0-9]/g, '');
+        if (!text) { invOutputEl.innerHTML = ""; return; }
+
         let resultHTML = "";
         let i = 0;
 
-        // Cập nhật badge
-        updateBadge(text);
+        while (i < text.length) {
+            let currA = isA(text[i]);
+            let hasNext = i + 1 < text.length;
+            let nextA = hasNext ? isA(text[i+1]) : currA;
+
+            if (hasNext && currA !== nextA) {
+                let start = i;
+                while (i + 1 < text.length && isA(text[i]) !== isA(text[i+1])) { i++; }
+                i++;
+                let len = i - start;
+                let fillChar = currA ? "A" : "b";
+                let fillClass = currA ? "cover-A" : "cover-b";
+                resultHTML += `<span class="${fillClass}">${fillChar.repeat(len)}</span>`;
+            } 
+            else {
+                let start = i;
+                while (i + 1 < text.length && isA(text[i]) === isA(text[i+1])) { i++; }
+                i++;
+                let len = i - start;
+                let mixStr = "";
+                for (let k = 0; k < len; k++) { mixStr += (k % 2 === 0) ? "A" : "b"; }
+                resultHTML += `<span class="cover-mix">${mixStr}</span>`;
+            }
+        }
+        invOutputEl.innerHTML = resultHTML;
+    }
+
+    // --- 2. THUẬT TOÁN HIGHLIGHT SỐ GỐC (MÀU TÍM) ---
+    function processHighlight() {
+        const text = inputEl.value;
+        const countText = text.replace(/[^0-9]/g, '');
+        if (!countText) { highOutputEl.innerHTML = ""; return; }
+        
+        updateBadge(countText);
+        const minLen = parseInt(minLengthHEl.value) || 4;
+        let resultHTML = "";
+        let i = 0;
 
         while (i < text.length) {
-            let currentType = getType(text[i]);
-            if (currentType === null) {
-                resultHTML += text[i];
-                i++;
-                continue;
+            let currA = isA(text[i]);
+            // Nếu không phải số (khoảng trắng/xuống dòng), giữ nguyên
+            if (!/[0-9]/.test(text[i])) { 
+                resultHTML += text[i++]; 
+                continue; 
             }
 
-            let startType = currentType;
+            let startType = currA ? 'A' : 'b';
             let j = i;
-            let tempMatch = text[i];
-            let lastType = currentType;
+            let temp = text[i];
+            let lastA = currA;
 
+            // Tìm cụm xen kẽ
             while (j + 1 < text.length) {
-                let nextType = getType(text[j + 1]);
-                if (nextType === null || nextType === lastType) break;
-                tempMatch += text[j + 1];
-                lastType = nextType;
-                j++;
+                if (!/[0-9]/.test(text[j + 1])) break; // Gặp ký tự lạ thì dừng cụm
+                let nextA = isA(text[j + 1]);
+                if (nextA === lastA) break;
+                temp += text[++j];
+                lastA = nextA;
             }
 
-            if (tempMatch.length >= minLen) {
-                let className = (startType === 'A') ? 'mark-Ab' : 'mark-bA';
-                resultHTML += `<span class="${className}">${tempMatch}</span>`;
+            if (temp.length >= minLen) {
+                let className = currA ? 'mark-orig-Ab' : 'mark-orig-bA';
+                resultHTML += `<span class="${className}">${temp}</span>`;
                 i = j + 1;
             } else {
-                resultHTML += text[i];
-                i++;
+                resultHTML += text[i++];
             }
         }
-        output.innerHTML = resultHTML;
-        
-        localStorage.setItem('autoSavedDataV6', text);
-        localStorage.setItem('savedMinLength', minLen);
+        highOutputEl.innerHTML = resultHTML;
     }
 
-    function clearData() {
-        if(confirm("Xóa toàn bộ dữ liệu?")) {
+    function processAll() {
+        processInverseLogic();
+        processHighlight();
+        localStorage.setItem('saved_dual_data_v1', inputEl.value);
+    }
+
+    function clearAll() {
+        if(confirm("Xóa sạch dữ liệu?")) {
             inputEl.value = "";
-            localStorage.removeItem('autoSavedDataV6');
-            processText();
+            invOutputEl.innerHTML = "";
+            highOutputEl.innerHTML = "";
+            updateBadge("");
+            localStorage.removeItem('saved_dual_data_v1');
         }
     }
-
-    inputEl.addEventListener('input', processText);
-
-    window.onload = function() {
-        const savedText = localStorage.getItem('autoSavedDataV6');
-        const savedLen = localStorage.getItem('savedMinLength');
-        
-        if (savedLen) minLengthEl.value = savedLen;
-        if (savedText) {
-            inputEl.value = savedText;
-            processText();
-        }
-    };
-
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            inputEl.value = e.target.result;
-            processText();
-        };
-        reader.readAsText(file);
-    });
 
     function downloadFile() {
+        if(!inputEl.value) return;
         const blob = new Blob([inputEl.value], { type: 'text/plain' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = "data_save.txt";
+        link.download = "du_lieu_dual.txt";
         link.click();
     }
-</script>
 
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (f) {
+            const r = new FileReader();
+            r.onload = (ev) => { 
+                inputEl.value = ev.target.result; 
+                processAll(); 
+            };
+            r.readAsText(f);
+        }
+    });
+
+    // Tự cập nhật khi chỉnh độ dài highlight
+    function updateHighlightOnly() {
+        processHighlight();
+        localStorage.setItem('saved_dual_data_v1', inputEl.value);
+    }
+
+    window.onload = () => {
+        const saved = localStorage.getItem('saved_dual_data_v1');
+        if (saved) {
+            inputEl.value = saved;
+            processAll();
+        }
+    };
+</script>
 </body>
 </html>
