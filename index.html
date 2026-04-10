@@ -3,255 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool Dual View: Pattern Analysis</title>
+    <title>Pattern Analysis - Strict Stopping Rule</title>
     <style>
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #121212; 
-            color: #e0e0e0; 
-            margin: 20px 3px 0 3px; 
-            padding: 0;
-            overflow-x: hidden;
-        }
-
-        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
-
-        #file-info-badge {
-            position: fixed; top: 10px; right: 10px;
-            background: #2c2c2c; color: #03dac6;
-            padding: 8px 15px; border-radius: 6px;
-            border: 1px solid #03dac6; font-size: 13px;
-            font-weight: bold; z-index: 1000;
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background-color: #121212; color: #e0e0e0; 
+            margin: 20px 10px; padding: 0;
         }
 
         .config-bar {
-            background: #1e1e1e; padding: 10px;
-            border-radius: 8px; margin-bottom: 10px;
-            display: flex; align-items: center;
-            gap: 15px; border: 1px solid #333; flex-wrap: wrap;
+            background: #1e1e1e; padding: 15px;
+            border-radius: 8px; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 12px;
+            border: 1px solid #333; flex-wrap: wrap;
         }
 
-        #inputText { display: none; }
-
-        .display-box { 
-            width: 100%; 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 10px;
+        .search-box {
+            background: #1a1a1a; padding: 15px; border-radius: 8px;
+            margin-bottom: 15px; border: 1px solid #03dac6;
         }
+
+        #searchQuery {
+            padding: 8px; width: 200px; border-radius: 4px; border: 1px solid #03dac6;
+            background: #121212; color: #fff; font-size: 16px; margin-bottom: 10px;
+        }
+
+        .search-item {
+            display: block; padding: 8px; color: #03dac6; cursor: pointer;
+            text-decoration: none; font-size: 14px; border-bottom: 1px solid #333;
+        }
+        .search-item:hover { background: #252525; color: #fff; }
 
         .output-panel { 
-            height: calc(100vh - 200px); 
-            padding: 15px; 
-            border-radius: 8px; 
-            border: 1px solid #444; 
-            background-color: #181818; 
-            color: #ffffff;
-            box-sizing: border-box; 
-            font-size: 18px; 
-            overflow-y: auto; 
-            overflow-x: hidden;
-            word-break: break-all; 
-            white-space: pre-wrap;
-            letter-spacing: 2px; 
-            line-height: 2.3;
+            height: calc(100vh - 450px); padding: 15px; border-radius: 8px; 
+            border: 1px solid #444; background: #181818; 
+            color: #fff; font-size: 19px; overflow-y: auto;
+            word-break: break-all; white-space: pre-wrap;
+            line-height: 2.5; letter-spacing: 2px;
+            scroll-behavior: smooth;
         }
 
-        /* --- MÀU 1: XEN KẼ (Ab/bA) --- */
-        #alternatingOutput { border-color: #bb86fc; }
-        .mark-Ab { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
-        .mark-bA { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
+        .highlight-origin { background-color: #ff0000 !important; color: #fff !important; font-weight: bold; padding: 2px 4px; border-radius: 3px; }
+        .highlight-follow { background-color: #ff9800 !important; color: #000 !important; font-weight: bold; padding: 2px 2px; border-radius: 2px; margin: 0 1px; }
 
-        /* --- MÀU 2: ĐỒNG NHẤT (AAA/bbb) --- */
-        #homogeneousOutput { border-color: #03dac6; }
-        .mark-AAA { background-color: #ffff00; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
-        .mark-bbb { background-color: #00bfff; color: #000; font-weight: bold; padding: 2px 0; display: inline-block; line-height: 1.2; }
-
-        .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-
-        button, .file-label { 
-            padding: 10px 20px; cursor: pointer; border: none; 
-            border-radius: 6px; background: #3700b3; color: white; 
-            font-weight: bold; font-size: 13px;
-        }
+        .mark-AA { background-color: #ff4444; color: #fff; }
+        .mark-bb { background-color: #4444ff; color: #fff; }
+        .mark-Ab { background-color: #ffff00; color: #000; }
+        .mark-bA { background-color: #00ff00; color: #000; }
         
-        .btn-alt { background: #bb86fc; color: #000; }
-        .btn-homo { background: #03dac6; color: #000; }
-        .btn-download { background: #cf6679; }
-
-        input[type="number"] {
-            padding: 5px; width: 60px; border-radius: 4px; border: 1px solid #444; background: #2c2c2c; color: #fff; text-align: center;
-        }
-        input[type="file"] { display: none; }
-        label { font-size: 13px; color: #aaa; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        #inputText { display: none; }
+        .output-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
     </style>
 </head>
 <body>
 
-<div id="file-info-badge">Dữ liệu: 0 số</div>
+<div class="search-box">
+    <label>🔍 TRA CỨU: <small>(Tô đỏ gốc, cam các cụm cùng loại phía sau, dừng khi gặp dãy ≥ 3)</small></label><br>
+    <input type="text" id="searchQuery" placeholder="Nhập số..." oninput="analyzeAndDisplay()">
+    <div id="searchResult"></div>
+</div>
 
-<div class="container">
-    <div class="config-bar">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <label>https://u888h8.com?f=6413880hung9xs 0xC1725aB69c4f7   </label>
-            <label>Độ dài lọc ≥</label>
-            <input type="number" id="minLength" value="4" min="2" oninput="autoRefresh()">
-        </div>
-        
-        <div style="margin-left: auto; display: flex; gap: 10px;">
-            <button class="btn-alt" onclick="processAlternating()">✨ TÔ MÀU Ab/bA</button>
-            <button class="btn-homo" onclick="processHomogeneous()">📊 TÔ MÀU AAA/bbb</button>
-        </div>
-    </div>
+<div class="config-bar">
+    <label>Độ dài ≥</label>
+    <input type="number" id="minLength" value="3" min="2" style="width:50px; background:#2c2c2c; color:#fff; border:1px solid #444;">
     
-    <textarea id="inputText"></textarea>
-
-    <div class="controls">
-        <label class="file-label">📁 CHỌN FILE .TXT <input type="file" id="fileInput" accept=".txt"></label>
-        <button class="btn-download" onclick="downloadFile()">💾 LƯU FILE</button>
-        <button onclick="clearAll()" style="background: #444;">🗑️ XÓA DỮ LIỆU</button>
+    <div style="display: flex; gap: 6px;">
+        <button style="background:#ff4444;color:#fff" onclick="process('AA')">AA</button>
+        <button style="background:#4444ff;color:#fff" onclick="process('bb')">bb</button>
+        <button style="background:#ffff00;color:#000" onclick="process('Ab')">Ab</button>
+        <button style="background:#00ff00;color:#000" onclick="process('bA')">bA</button>
+        <button style="background:#fff; color:#000" onclick="resetToRaw()">🔄 RESET</button>
     </div>
 
-    <div class="display-box">
-        <div>
-            <div style="font-size: 12px; color: #bb86fc; font-weight: bold; margin-bottom: 3px;">1. DÃY XEN KẼ (Ab / bA)</div>
-            <div id="alternatingOutput" class="output-panel"></div>
-        </div>
-        
-        <div>
-            <div style="font-size: 12px; color: #03dac6; font-weight: bold; margin-bottom: 3px;">2. DÃY ĐỒNG NHẤT (AAA / bbb)</div>
-            <div id="homogeneousOutput" class="output-panel"></div>
-        </div>
+    <div style="margin-left: auto;">
+        <label style="background: #3700b3; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+            📁 CHỌN FILE <input type="file" id="fileInput" accept=".txt" style="display:none">
+        </label>
+        <button style="background:#444; color:#fff;" onclick="clearData()">🗑️ XÓA</button>
     </div>
+</div>
+
+<textarea id="inputText"></textarea>
+
+<div class="output-container">
+    <div><div id="outHomo" class="output-panel"></div></div>
+    <div><div id="outAlt" class="output-panel"></div></div>
 </div>
 
 <script>
     const inputEl = document.getElementById('inputText');
-    const altOutputEl = document.getElementById('alternatingOutput');
-    const homoOutputEl = document.getElementById('homogeneousOutput');
-    const minLenEl = document.getElementById('minLength');
-    const infoBadge = document.getElementById('file-info-badge');
+    const outHomo = document.getElementById('outHomo');
+    const outAlt = document.getElementById('outAlt');
+    const searchQueryEl = document.getElementById('searchQuery');
+    const searchResultEl = document.getElementById('searchResult');
+    const STORAGE_KEY = 'saved_dual_tool_data';
 
     const isA = (c) => /[0-9]/.test(c) && parseInt(c) >= 5;
 
-    function updateBadge(text) {
-        const count = text.replace(/[^0-9]/g, '').length;
-        infoBadge.innerHTML = `Dữ liệu: ${count.toLocaleString()} số`;
+    function getPatternType(str) {
+        if (str.length < 2) return null;
+        const fA = isA(str[0]), sA = isA(str[1]);
+        if (fA && sA) return "AA"; if (!fA && !sA) return "bb";
+        if (fA && !sA) return "Ab"; return "bA";
     }
 
-    // Tự động làm mới khi đổi số ở ô Độ dài
-    function autoRefresh() {
-        if (inputEl.value) {
-            processAlternating();
-            processHomogeneous();
+    // Kiểm tra xem tại vị trí k có phải là dãy cùng loại dài >= 3 không
+    function isLongSequence(text, k, type) {
+        let temp = text[k];
+        let j = k;
+        while (j + 1 < text.length) {
+            let currentIsA = isA(text[j]), nextIsA = isA(text[j+1]);
+            let m = false;
+            if (type === 'AA') m = currentIsA && nextIsA;
+            else if (type === 'bb') m = !currentIsA && !nextIsA;
+            else if (type === 'Ab') m = (currentIsA !== nextIsA) && isA(text[k]);
+            else if (type === 'bA') m = (currentIsA !== nextIsA) && !isA(text[k]);
+            
+            if (m) { temp += text[j+1]; j++; } 
+            else break;
         }
+        return temp.length >= 3;
     }
 
-    // 1. Logic Tô màu Ab/bA (Xen kẽ)
-    function processAlternating() {
-        const text = inputEl.value;
-        const minLen = parseInt(minLenEl.value) || 4;
+    function analyzeAndDisplay() {
+        const query = searchQueryEl.value;
+        const text = inputEl.value.replace(/[^0-9]/g, '');
+        if (query.length < 2 || !text) { searchResultEl.innerHTML = ""; return; }
+
+        const qType = getPatternType(query);
+        let index = text.indexOf(query);
+        let html = "";
+        let count = 0;
+
+        while (index !== -1 && count < 50) {
+            let followIndices = [];
+            let k = index + query.length;
+
+            while (k <= text.length - 2) {
+                // Nếu gặp dãy cùng loại dài >= 3 (ví dụ bAbA) -> DỪNG
+                if (isLongSequence(text, k, qType)) break;
+
+                let chunk = text.substr(k, 2);
+                if (getPatternType(chunk) === qType) {
+                    followIndices.push(k);
+                    k += 2; // Nhảy qua cụm đã tô
+                } else {
+                    k++; // Không phải loại đó thì nhích 1 ký tự tìm tiếp
+                }
+            }
+
+            html += `<div class="search-item" onclick="drawHighlight(${index}, ${query.length}, ${JSON.stringify(followIndices)})">
+                        📍 Vị trí ${index}: [${query}] -> Tìm thấy ${followIndices.length} cụm ${qType} đơn lẻ phía sau.
+                     </div>`;
+            
+            index = text.indexOf(query, index + 1);
+            count++;
+        }
+        searchResultEl.innerHTML = html || "Không tìm thấy.";
+    }
+
+    function drawHighlight(originIdx, originLen, followIndices) {
+        const text = inputEl.value.replace(/[^0-9]/g, '');
+        let resultHTML = "";
+        let lastIdx = 0;
+
+        // Tô màu đỏ cho gốc
+        resultHTML += text.substring(0, originIdx);
+        resultHTML += `<span id="target-scroll" class="highlight-origin">${text.substr(originIdx, originLen)}</span>`;
+        lastIdx = originIdx + originLen;
+
+        // Tô màu cam cho các vị trí đã lưu
+        followIndices.forEach(idx => {
+            resultHTML += text.substring(lastIdx, idx);
+            resultHTML += `<span class="highlight-follow">${text.substr(idx, 2)}</span>`;
+            lastIdx = idx + 2;
+        });
+
+        resultHTML += text.substring(lastIdx);
+        
+        outHomo.innerHTML = resultHTML;
+        outAlt.innerHTML = resultHTML;
+
+        setTimeout(() => {
+            const target = document.getElementById('target-scroll');
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+    }
+
+    function resetToRaw() {
+        outHomo.innerText = inputEl.value;
+        outAlt.innerText = inputEl.value;
+        analyzeAndDisplay();
+    }
+
+    function process(type) {
+        const text = inputEl.value.replace(/[^0-9]/g, '');
+        const minLen = parseInt(document.getElementById('minLength').value) || 2;
         let resultHTML = "";
         let i = 0;
-
         while (i < text.length) {
-            if (!/[0-9]/.test(text[i])) { resultHTML += text[i++]; continue; }
-
             let j = i;
             let temp = text[i];
-            let lastIsA = isA(text[i]);
-
-            while (j + 1 < text.length && /[0-9]/.test(text[j + 1])) {
-                let nextIsA = isA(text[j + 1]);
-                if (nextIsA === lastIsA) break;
-                temp += text[++j];
-                lastIsA = nextIsA;
+            while (j + 1 < text.length) {
+                let currentIsA = isA(text[j]), nextIsA = isA(text[j+1]);
+                let m = false;
+                if (type === 'AA') m = currentIsA && nextIsA;
+                else if (type === 'bb') m = !currentIsA && !nextIsA;
+                else if (type === 'Ab') m = (currentIsA !== nextIsA) && isA(text[i]);
+                else if (type === 'bA') m = (currentIsA !== nextIsA) && !isA(text[i]);
+                if (m) temp += text[++j]; else break;
             }
-
             if (temp.length >= minLen) {
-                let className = isA(text[i]) ? 'mark-Ab' : 'mark-bA';
-                resultHTML += `<span class="${className}">${temp}</span>`;
+                resultHTML += `<span class="mark-${type}">${temp}</span>`;
                 i = j + 1;
-            } else {
-                resultHTML += text[i++];
-            }
+            } else { resultHTML += text[i++]; }
         }
-        altOutputEl.innerHTML = resultHTML;
-        updateBadge(text);
+        if (type === 'AA' || type === 'bb') outHomo.innerHTML = resultHTML;
+        else outAlt.innerHTML = resultHTML;
     }
 
-    // 2. Logic Tô màu AAA/bbb (Đồng nhất)
-    function processHomogeneous() {
-        const text = inputEl.value;
-        const minLen = parseInt(minLenEl.value) || 4;
-        let resultHTML = "";
-        let i = 0;
-
-        while (i < text.length) {
-            if (!/[0-9]/.test(text[i])) { resultHTML += text[i++]; continue; }
-
-            let j = i;
-            let temp = text[i];
-            let currentIsA = isA(text[i]);
-
-            while (j + 1 < text.length && /[0-9]/.test(text[j + 1])) {
-                if (isA(text[j + 1]) !== currentIsA) break;
-                temp += text[++j];
-            }
-
-            if (temp.length >= minLen) {
-                let className = currentIsA ? 'mark-AAA' : 'mark-bbb';
-                resultHTML += `<span class="${className}">${temp}</span>`;
-                i = j + 1;
-            } else {
-                resultHTML += text[i++];
-            }
+    function clearData() {
+        if(confirm("Xóa hết?")) {
+            inputEl.value = ""; localStorage.removeItem(STORAGE_KEY);
+            outHomo.innerHTML = ""; outAlt.innerHTML = ""; searchResultEl.innerHTML = "";
         }
-        homoOutputEl.innerHTML = resultHTML;
-    }
-
-    function clearAll() {
-        if(confirm("Xóa sạch dữ liệu?")) {
-            inputEl.value = "";
-            altOutputEl.innerHTML = "";
-            homoOutputEl.innerHTML = "";
-            updateBadge("");
-            localStorage.removeItem('saved_dual_tool_data');
-        }
-    }
-
-    function downloadFile() {
-        if(!inputEl.value) return;
-        const blob = new Blob([inputEl.value], { type: 'text/plain' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = "data_analysis.txt";
-        link.click();
     }
 
     document.getElementById('fileInput').addEventListener('change', (e) => {
-        const f = e.target.files[0];
-        if (f) {
-            const r = new FileReader();
-            r.onload = (ev) => { 
-                inputEl.value = ev.target.result; 
-                processAlternating();
-                processHomogeneous();
-                localStorage.setItem('saved_dual_tool_data', inputEl.value);
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                inputEl.value = ev.target.result;
+                localStorage.setItem(STORAGE_KEY, inputEl.value);
+                resetToRaw();
             };
-            r.readAsText(f);
+            reader.readAsText(file);
         }
     });
 
     window.onload = () => {
-        const saved = localStorage.getItem('saved_dual_tool_data');
-        if (saved) {
-            inputEl.value = saved;
-            processAlternating();
-            processHomogeneous();
-        }
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) { inputEl.value = saved; resetToRaw(); }
     };
 </script>
 </body>
 </html>
-
