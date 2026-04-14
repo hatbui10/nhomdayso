@@ -42,6 +42,7 @@
         button { cursor: pointer; padding: 10px 15px; border: none; font-weight: bold; border-radius: 4px; color: white; transition: 0.3s; font-size: 12px; }
         .btn-run { background: #27ae60; }
         .btn-scan { background: #e67e22; border: 2px solid #fff; }
+        .btn-reset { background: #34495e; }
         .btn-clear { background: #e74c3c; }
         
         #scanStatus { text-align: center; font-size: 14px; color: #f1c40f; margin-top: 5px; min-height: 1.5em; font-family: monospace; background: #000; padding: 10px; border-radius: 6px; border: 1px solid #444; }
@@ -73,11 +74,12 @@
             </div>
             <button class="btn-run" onclick="renderLogic()">CHẠY TAY</button>
             <button class="btn-scan" onclick="startAutoScan()">⚡ SIÊU QUÉT</button>
+            <button class="btn-reset" onclick="resetUI()">🔄 RESET</button>
         </div>
 
         <div style="margin-bottom:15px; display:flex; gap:10px; align-items: center;">
             <input type="file" id="fileInput" accept=".txt" style="flex:1; background:#333; padding:5px; border-radius:4px;">
-            <button class="btn-clear" onclick="clearAll()">XÓA HẾT</button>
+            <button class="btn-clear" onclick="clearAllData()">XÓA DỮ LIỆU</button>
         </div>
         
         <div id="scanStatus">
@@ -106,6 +108,14 @@
     let rawNumbers = localStorage.getItem('savedNumbers') || "";
     let globalRules = JSON.parse(localStorage.getItem('globalRules') || "{}");
     let isScanning = false;
+
+    function resetUI() {
+        isScanning = false; // Dừng quét
+        statusLabel.textContent = "TRẠNG THÁI:";
+        liveCount.textContent = "0000000";
+        logList.innerHTML = ""; // Xóa nhật ký lỗi
+        if (rawNumbers) renderLogic(); // Vẽ lại lưới ban đầu (nếu có dữ liệu)
+    }
 
     function updateClusterSize() {
         saveCurrentInputs();
@@ -139,6 +149,7 @@
     window.onload = () => {
         clusterSizeInput.value = localStorage.getItem('clusterSize') || "3";
         initRuleInputs();
+        if(rawNumbers) renderLogic();
     };
 
     document.getElementById('fileInput').addEventListener('change', (e) => {
@@ -178,7 +189,7 @@
         if (!rawNumbers || isScanning) return;
         isScanning = true;
         
-        const startTime = performance.now(); // Bắt đầu tính giờ
+        const startTime = performance.now();
         const size = parseInt(clusterSizeInput.value);
         const limit = parseInt(document.getElementById('maxGapInput').value);
         const scanMax = parseInt(document.getElementById('scanLimitInput').value);
@@ -205,6 +216,8 @@
 
         let i = 0;
         const runBatch = async () => {
+            if (!isScanning) return; 
+
             const speed = parseInt(speedInput.value) || 100000;
             const batchSize = Math.max(1, Math.floor(speed / 60)); 
 
@@ -216,18 +229,14 @@
                 }
 
                 if (checkLogicFast(testRules, limit, size, groupsData)) {
-                    const endTime = performance.now();
-                    const duration = ((endTime - startTime) / 1000).toFixed(2); // Tính giây
-
+                    const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                     patterns.forEach(p => {
                         const el = document.getElementById('rule_' + p);
                         if(el) el.value = testRules[p];
                         globalRules[p] = testRules[p];
                     });
-                    
                     saveCurrentInputs();
                     renderLogic();
-                    
                     statusLabel.textContent = `✅ TÌM THẤY (${duration}s):`;
                     liveCount.textContent = i.toLocaleString();
                     isScanning = false;
@@ -235,17 +244,15 @@
                 }
             }
 
-            // Hiển thị số nhảy liên tục
             liveCount.textContent = i.toString().padStart(7, '0');
 
             if (i < scanMax && isScanning) {
                 requestAnimationFrame(runBatch);
-            } else {
+            } else if (i >= scanMax) {
                 isScanning = false;
-                if(i >= scanMax) statusLabel.textContent = "❌ THẤT BẠI:";
+                statusLabel.textContent = "❌ THẤT BẠI:";
             }
         };
-
         requestAnimationFrame(runBatch);
     }
 
@@ -262,7 +269,6 @@
         for (let i = 0; i < rawNumbers.length; i += size) {
             let group = rawNumbers.substring(i, i + size);
             let rowIndex = Math.floor(i / size) + 1;
-
             for (let j = 0; j < size; j++) {
                 const div = document.createElement('div');
                 div.className = 'cell'; div.textContent = group[j] || "-";
@@ -275,7 +281,6 @@
                 div.textContent = nextLabels[j];
                 const charType = group[j] ? getNumType(group[j]) : null;
                 const currentIdx = i + j + 1;
-
                 if (nextLabels[j] !== "" && charType === nextLabels[j]) {
                     div.classList.add('match-highlight');
                     if (lastIdx !== -1 && (currentIdx - lastIdx - 1 >= limit)) {
@@ -300,7 +305,12 @@
         }
     }
 
-    function clearAll() { localStorage.clear(); location.reload(); }
+    function clearAllData() {
+        if(confirm("Bạn có chắc muốn xóa sạch file và quy tắc đã lưu?")) {
+            localStorage.clear(); 
+            location.reload();
+        }
+    }
 </script>
 </body>
                 </html>
