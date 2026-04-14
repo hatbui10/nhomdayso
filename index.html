@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phân Tích Tổ Hợp 8 Trường Hợp</title>
+    <title>Phân Tích Tổ Hợp & Cảnh Báo Khoảng Cách</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -35,21 +35,72 @@
             padding: 20px;
         }
 
-        .container {
-            max-width: 900px;
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
             margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        .container {
+            flex: 2;
             background: var(--container-bg);
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
+        /* Sidebar ghi log */
+        .log-panel {
+            flex: 1;
+            background: var(--container-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 20px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--highlight-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        #logList {
+            overflow-y: auto;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .log-item {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+            border-left: 3px solid #e74c3c;
+        }
+
+        .log-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
         .config-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
             background: var(--label-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             margin-bottom: 25px;
             border: 1px solid var(--border-color);
@@ -58,35 +109,22 @@
         .rule-item {
             display: flex;
             flex-direction: column;
-            gap: 5px;
         }
 
-        .rule-item label {
-            font-size: 0.85em;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
+        .rule-item label { font-size: 0.8em; color: var(--primary-color); }
 
         .rule-item input {
-            padding: 8px;
+            padding: 5px;
             text-align: center;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
             background: var(--input-bg);
             color: var(--text-color);
-            
-            font-weight: bold;
-        }
-
-        .controls {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
         }
 
         .grid-header {
             display: grid;
-            grid-template-columns: repeat(3, 50px) 30px repeat(3, 50px);
+            grid-template-columns: repeat(3, 50px) 30px repeat(3, 50px) 40px;
             gap: 10px;
             font-weight: bold;
             margin-bottom: 10px;
@@ -95,7 +133,7 @@
 
         #numberGrid {
             display: grid;
-            grid-template-columns: repeat(3, 50px) 30px repeat(3, 50px);
+            grid-template-columns: repeat(3, 50px) 30px repeat(3, 50px) 40px;
             gap: 10px;
         }
 
@@ -109,14 +147,17 @@
             background: var(--cell-bg);
             border-radius: 6px;
             font-weight: bold;
-            font-size: 1.2em;
         }
 
-        .cell.label {
-            background-color: var(--label-bg);
-            color: var(--primary-color);
-            border-style: dashed;
+        .row-index {
+            font-size: 0.7em;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
+        .cell.label { border-style: dashed; color: var(--primary-color); }
 
         .match-highlight {
             background-color: var(--highlight-color) !important;
@@ -127,72 +168,66 @@
         .separator { width: 30px; }
 
         button {
-            padding: 10px 20px;
+            padding: 8px 15px;
             cursor: pointer;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             background: var(--primary-color);
             color: white;
             font-weight: bold;
         }
 
-        .apply-btn {
-            grid-column: 1 / -1;
-            background: #27ae60;
-            margin-top: 10px;
-        }
+        .apply-btn { grid-column: 1 / -1; background: #27ae60; margin-top: 5px; }
     </style>
 </head>
 <body data-theme="dark">
 
-<div class="container">
-    <h2 style="text-align:center;">Cấu Hình 8 Tổ Hợp Logic</h2>
+<div class="main-layout">
+    <div class="container">
+        <h3 style="margin-top:0;">Phân Tích & Cấu Hình</h3>
 
-    <div class="config-grid" id="configGrid">
-        <div class="rule-item"><label>AAA →</label><input type="text" id="rule_AAA" value="AAb" maxlength="3"></div>
-        <div class="rule-item"><label>AAb →</label><input type="text" id="rule_AAb" value="" maxlength="3"></div>
-        <div class="rule-item"><label>AbA →</label><input type="text" id="rule_AbA" value="Abb" maxlength="3"></div>
-        <div class="rule-item"><label>Abb →</label><input type="text" id="rule_Abb" value="" maxlength="3"></div>
-        <div class="rule-item"><label>bAA →</label><input type="text" id="rule_bAA" value="bbb" maxlength="3"></div>
-        <div class="rule-item"><label>bAb →</label><input type="text" id="rule_bAb" value="" maxlength="3"></div>
-        <div class="rule-item"><label>bbA →</label><input type="text" id="rule_bbA" value="" maxlength="3"></div>
-        <div class="rule-item"><label>bbb →</label><input type="text" id="rule_bbb" value="" maxlength="3"></div>
-        
-        <button class="apply-btn" onclick="renderLogic()">Cập Nhật & Lưu Quy Tắc</button>
-    </div>
-    
-    <div class="controls">
-        <input type="file" id="fileInput" accept=".txt" style="background: var(--label-bg); padding: 8px; border-radius: 4px; flex-grow: 1;">
-        <button onclick="toggleDarkMode()" style="background: #7f8c8d;">Sáng/Tối</button>
-        <button style="background:#e74c3c" onclick="clearData()">Xóa hết</button>
+        <div class="config-grid">
+            <div class="rule-item"><label>AAA</label><input type="text" id="rule_AAA" value="AAb" maxlength="3"></div>
+            <div class="rule-item"><label>AAb</label><input type="text" id="rule_AAb" value="" maxlength="3"></div>
+            <div class="rule-item"><label>AbA</label><input type="text" id="rule_AbA" value="Abb" maxlength="3"></div>
+            <div class="rule-item"><label>Abb</label><input type="text" id="rule_Abb" value="" maxlength="3"></div>
+            <div class="rule-item"><label>bAA</label><input type="text" id="rule_bAA" value="bbb" maxlength="3"></div>
+            <div class="rule-item"><label>bAb</label><input type="text" id="rule_bAb" value="" maxlength="3"></div>
+            <div class="rule-item"><label>bbA</label><input type="text" id="rule_bbA" value="" maxlength="3"></div>
+            <div class="rule-item"><label>bbb</label><input type="text" id="rule_bbb" value="" maxlength="3"></div>
+            <button class="apply-btn" onclick="renderLogic()">Áp Dụng Quy Tắc</button>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <input type="file" id="fileInput" accept=".txt" style="flex-grow:1;">
+            <button onclick="toggleDarkMode()" style="background:#7f8c8d">Sáng/Tối</button>
+            <button onclick="clearData()" style="background:#e74c3c">Xóa</button>
+        </div>
+
+        <div class="grid-header">
+            <span>S1</span><span>S2</span><span>S3</span><span></span><span>K1</span><span>K2</span><span>K3</span><span>#</span>
+        </div>
+        <div id="numberGrid"></div>
     </div>
 
-    <div class="grid-header">
-        <span>S1</span><span>S2</span><span>S3</span>
-        <span></span>
-        <span>KQ1</span><span>KQ2</span><span>KQ3</span>
+    <div class="log-panel">
+        <div class="log-title">Cảnh báo khoảng cách (>4)</div>
+        <ul id="logList"></ul>
     </div>
-    
-    <div id="numberGrid"></div>
 </div>
 
 <script>
     const fileInput = document.getElementById('fileInput');
     const numberGrid = document.getElementById('numberGrid');
+    const logList = document.getElementById('logList');
     const patterns = ['AAA', 'AAb', 'AbA', 'Abb', 'bAA', 'bAb', 'bbA', 'bbb'];
-    
     let rawNumbers = localStorage.getItem('savedNumbers') || "";
 
     window.onload = () => {
-        // Load quy tắc từ storage
         patterns.forEach(p => {
             const saved = localStorage.getItem('rule_' + p);
             if (saved) document.getElementById('rule_' + p).value = saved;
         });
-        
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.body.setAttribute('data-theme', savedTheme);
-
         if (rawNumbers) renderLogic();
     };
 
@@ -210,17 +245,14 @@
 
     function getNumType(char) {
         let n = parseInt(char);
-        if (isNaN(n)) return null;
         return (n >= 5) ? 'A' : 'b'; 
     }
 
     function renderLogic() {
-        // Lưu toàn bộ quy tắc
-        patterns.forEach(p => {
-            localStorage.setItem('rule_' + p, document.getElementById('rule_' + p).value.trim());
-        });
-
+        patterns.forEach(p => localStorage.setItem('rule_' + p, document.getElementById('rule_' + p).value.trim()));
+        
         numberGrid.innerHTML = "";
+        logList.innerHTML = "";
         const fragment = document.createDocumentFragment();
         
         let groups = [];
@@ -228,10 +260,14 @@
             groups.push(rawNumbers.substring(i, i + 3));
         }
 
-        let nextLabels = ["", "", ""]; 
+        let nextLabels = ["", "", ""];
+        let lastHighlightRow = -1; // Theo dõi hàng cuối cùng có tô vàng
 
-        groups.forEach((group) => {
-            // Hiển thị số thực tế
+        groups.forEach((group, index) => {
+            const rowId = `row-${index}`;
+            let hasHighlight = false;
+
+            // Ô thực tế
             for (let i = 0; i < 3; i++) {
                 const div = document.createElement('div');
                 div.className = 'cell';
@@ -239,41 +275,54 @@
                 fragment.appendChild(div);
             }
 
-            // Ngăn cách
+            // Phân cách
             const sep = document.createElement('div');
             sep.className = 'separator';
             fragment.appendChild(sep);
 
-            // Hiển thị dự đoán (Kết quả áp dụng từ hàng TRƯỚC)
+            // Ô dự đoán
             for (let i = 0; i < 3; i++) {
                 const div = document.createElement('div');
                 div.className = 'cell label';
-                const labelValue = nextLabels[i];
-                div.textContent = labelValue;
+                div.textContent = nextLabels[i];
 
-                if (labelValue !== "" && group[i]) {
-                    if (getNumType(group[i]) === labelValue) {
+                if (nextLabels[i] !== "" && group[i]) {
+                    if (getNumType(group[i]) === nextLabels[i]) {
                         div.classList.add('match-highlight');
+                        hasHighlight = true;
                     }
                 }
                 fragment.appendChild(div);
             }
 
-            // TÍNH TOÁN CHO HÀNG TIẾP THEO
-            if (group.length === 3) {
-                // Xác định tổ hợp hiện tại (VD: "AbA")
-                let currentPattern = "";
-                for(let char of group) {
-                    currentPattern += getNumType(char);
-                }
+            // Chỉ số hàng (Để nhảy tới)
+            const idxDiv = document.createElement('div');
+            idxDiv.className = 'row-index';
+            idxDiv.id = rowId;
+            idxDiv.textContent = index + 1;
+            fragment.appendChild(idxDiv);
 
-                // Lấy quy tắc tương ứng từ ô Input
-                let ruleStr = document.getElementById('rule_' + currentPattern).value.trim();                
-                if (ruleStr.length === 3) {
-                    nextLabels = ruleStr.split('');
-                } else {
-                    nextLabels = ["", "", ""];
+            // LOGIC KHOẢNG CÁCH
+            if (hasHighlight) {
+                if (lastHighlightRow !== -1) {
+                    let distance = index - lastHighlightRow - 1;
+                    if (distance > 4) {
+                        const li = document.createElement('li');
+                        li.className = 'log-item';
+                        li.textContent = `Hàng ${lastHighlightRow + 1} -> ${index + 1}: Trống ${distance} hàng`;
+                        li.onclick = () => document.getElementById(`row-${lastHighlightRow + 1}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        logList.appendChild(li);
+                    }
                 }
+                lastHighlightRow = index;
+            }
+
+            // Tính cho hàng sau
+            if (group.length === 3) {
+                let currentPattern = "";
+                for(let char of group) currentPattern += getNumType(char);
+                let ruleStr = document.getElementById('rule_' + currentPattern).value.trim();
+                nextLabels = ruleStr.length === 3 ? ruleStr.split('') : ["", "", ""];
             } else {
                 nextLabels = ["", "", ""];
             }
@@ -283,17 +332,14 @@
     }
 
     function toggleDarkMode() {
-        const currentTheme = document.body.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        document.body.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        const current = document.body.getAttribute('data-theme');
+        document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
     }
 
     function clearData() {
-        if (confirm("Xóa dữ liệu cũ?")) {
+        if (confirm("Xóa hết?")) {
             localStorage.removeItem('savedNumbers');
-            rawNumbers = "";
-            renderLogic();
+            location.reload();
         }
     }
 </script>
