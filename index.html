@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phân Tích Logic - Giữ Nguyên Quy Tắc</title>
+    <title>Phân Tích Logic - Tốc Độ Siêu Cấp</title>
     <style>
         :root {
             --bg-color: #121212; --text-color: #e0e0e0; --container-bg: #1e1e1e;
@@ -37,19 +37,19 @@
         }
         .blink-active { animation: flash-red 0.4s ease-in-out 10; z-index: 100; position: relative; }
 
-        .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-bottom: 15px; background: #252525; padding: 15px; border-radius: 8px; max-height: 200px; overflow-y: auto; }
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 10px; margin-bottom: 15px; background: #252525; padding: 15px; border-radius: 8px; max-height: 200px; overflow-y: auto; }
         .rule-item { display: flex; flex-direction: column; align-items: center; }
         .rule-item label { font-size: 10px; margin-bottom: 4px; color: #aaa; }
-        .rule-item input { width: 90%; padding: 4px; background: var(--input-bg); color: #fff; border: 1px solid #444; text-align: center; border-radius: 4px; font-size: 12px; }
+        .rule-item input { width: 90%; padding: 4px; background: var(--input-bg); color: #fff; border: 1px solid #444; text-align: center; border-radius: 4px; font-size: 12px; font-weight: bold; }
         
         .control-bar { background: #2c3e50; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: center; }
         .input-group { display: flex; align-items: center; gap: 8px; background: #1a1a1a; padding: 5px 12px; border-radius: 4px; border: 1px solid var(--primary-color); }
         .input-group label { font-size: 11px; font-weight: bold; color: var(--primary-color); }
-        .input-group input { width: 60px; padding: 5px; background: transparent; border: none; color: white; font-weight: bold; text-align: center; }
+        .input-group input { width: 85px; padding: 5px; background: transparent; border: none; color: white; font-weight: bold; text-align: center; }
 
         button { cursor: pointer; padding: 10px 15px; border: none; font-weight: bold; border-radius: 4px; color: white; transition: 0.3s; font-size: 12px; }
         .btn-run { background: #27ae60; }
-        .btn-scan { background: #e67e22; }
+        .btn-scan { background: #e67e22; border: 2px solid #fff; }
         .btn-clear { background: #e74c3c; }
         
         #scanStatus { text-align: center; font-size: 13px; color: #f1c40f; margin-top: 5px; min-height: 1.2em; font-family: monospace; }
@@ -63,7 +63,7 @@
 
         <div class="control-bar">
             <div class="input-group">
-                <label>ĐỘ DÀI CỤM:</label>
+                <label>CỤM:</label>
                 <input type="number" id="clusterSizeInput" value="3" min="1" max="10" onchange="updateClusterSize()">
             </div>
             <div class="input-group">
@@ -71,11 +71,11 @@
                 <input type="number" id="maxGapInput" value="7">
             </div>
             <div class="input-group">
-                <label>LẦN THỬ:</label>
-                <input type="number" id="scanLimitInput" value="100000">
+                <label>MẪU THỬ:</label>
+                <input type="number" id="scanLimitInput" value="1000000">
             </div>
-            <button class="btn-run" onclick="renderLogic()">CHẠY THỦ CÔNG</button>
-            <button class="btn-scan" onclick="startAutoScan()">QUÉT TỰ ĐỘNG</button>
+            <button class="btn-run" onclick="renderLogic()">CHẠY TAY</button>
+            <button class="btn-scan" onclick="startAutoScan()">⚡ SIÊU QUÉT</button>
         </div>
 
         <div style="margin-bottom:15px; display:flex; gap:10px; align-items: center;">
@@ -89,7 +89,7 @@
     </div>
 
     <div class="log-panel">
-        <div class="log-title" id="logTitle">LOG TRỐNG</div>
+        <div class="log-title" id="logTitle">NHẬT KÝ TRỐNG</div>
         <ul id="logList"></ul>
     </div>
 </div>
@@ -106,14 +106,12 @@
     let rawNumbers = localStorage.getItem('savedNumbers') || "";
     let globalRules = JSON.parse(localStorage.getItem('globalRules') || "{}");
 
-    // Hàm cập nhật khi thay đổi độ dài cụm
     function updateClusterSize() {
-        saveCurrentInputs(); // Lưu lại những gì đang nhập trước khi đổi
+        saveCurrentInputs();
         initRuleInputs();
         if (rawNumbers) renderLogic();
     }
 
-    // Lưu tất cả input hiện có vào biến toàn cục
     function saveCurrentInputs() {
         const inputs = ruleConfig.querySelectorAll('input');
         inputs.forEach(input => {
@@ -125,7 +123,6 @@
         localStorage.setItem('globalRules', JSON.stringify(globalRules));
     }
 
-    // Khởi tạo các ô quy tắc dựa trên độ dài cụm
     function initRuleInputs() {
         const size = parseInt(clusterSizeInput.value);
         const total = Math.pow(2, size);
@@ -133,23 +130,18 @@
         
         for (let i = 0; i < total; i++) {
             let p = i.toString(2).padStart(size, '0').replace(/0/g, 'A').replace(/1/g, 'b');
-            
             const div = document.createElement('div');
             div.className = 'rule-item';
             div.innerHTML = `<label>${p}</label><input type="text" id="rule_${p}" placeholder="...">`;
             ruleConfig.appendChild(div);
-            
-            // Nếu đã từng nhập quy tắc này trước đó thì điền lại
-            if (globalRules[p]) {
-                div.querySelector('input').value = globalRules[p];
-            }
+            if (globalRules[p]) div.querySelector('input').value = globalRules[p];
         }
     }
 
     window.onload = () => {
         clusterSizeInput.value = localStorage.getItem('clusterSize') || "3";
         maxGapInput.value = localStorage.getItem('maxGapLimit') || "7";
-        scanLimitInput.value = localStorage.getItem('scanLimit') || "100000";
+        scanLimitInput.value = localStorage.getItem('scanLimit') || "1000000";
         initRuleInputs();
     };
 
@@ -172,30 +164,28 @@
         location.reload();
     }
 
-    // Logic kiểm tra nhanh
-    function checkLogicFast(currentRules, limit, size) {
+    // HÀM KIỂM TRA TỐC ĐỘ CAO (ĐÃ TỐI ƯU)
+    function checkLogicFast(currentRules, limit, size, groupsData) {
         let lastGlobalIdx = -1;
         let hasMatch = false;
-        let nextLabels = Array(size).fill("");
+        let nextLabels = null;
 
-        for (let i = 0; i < rawNumbers.length; i += size) {
-            let group = rawNumbers.substring(i, i + size);
-            if (group.length < size) break;
-
-            for (let j = 0; j < size; j++) {
-                const currentIdx = i + j + 1;
-                const charType = getNumType(group[j]);
-                if (nextLabels[j] !== "" && charType === nextLabels[j]) {
-                    if (lastGlobalIdx !== -1 && (currentIdx - lastGlobalIdx - 1 >= limit)) return false;
-                    lastGlobalIdx = currentIdx;
-                    hasMatch = true;
+        for (let i = 0; i < groupsData.length; i++) {
+            const { p, currentIndices, types } = groupsData[i];
+            
+            if (nextLabels) {
+                for (let j = 0; j < size; j++) {
+                    if (nextLabels[j] === types[j]) {
+                        if (lastGlobalIdx !== -1 && (currentIndices[j] - lastGlobalIdx - 1 >= limit)) return false;
+                        lastGlobalIdx = currentIndices[j];
+                        hasMatch = true;
+                    }
                 }
             }
-            let p = ""; for (let char of group) p += getNumType(char);
-            let r = currentRules[p] || "";
-            nextLabels = r.length === size ? r.split('') : Array(size).fill("");
+            const r = currentRules[p];
+            nextLabels = (r && r.length === size) ? r : null;
         }
-        return hasMatch; 
+        return hasMatch;
     }
 
     async function startAutoScan() {
@@ -204,11 +194,30 @@
         const limit = parseInt(maxGapInput.value);
         const scanMax = parseInt(scanLimitInput.value);
         
-        statusText.textContent = "⌛ Đang quét...";
+        // Tiền xử lý dữ liệu để quét nhanh hơn
+        const groupsData = [];
+        for (let i = 0; i < rawNumbers.length; i += size) {
+            let group = rawNumbers.substring(i, i + size);
+            if (group.length < size) break;
+            let p = "";
+            let types = [];
+            let currentIndices = [];
+            for (let j = 0; j < size; j++) {
+                const t = getNumType(group[j]);
+                p += t;
+                types.push(t);
+                currentIndices.push(i + j + 1);
+            }
+            groupsData.push({ p, types, currentIndices });
+        }
+
         const patterns = [];
         for (let i = 0; i < Math.pow(2, size); i++) {
             patterns.push(i.toString(2).padStart(size, '0').replace(/0/g, 'A').replace(/1/g, 'b'));
         }
+
+        let startTime = performance.now();
+        statusText.textContent = "⚡ Đang khởi động bộ máy quét...";
 
         for (let i = 1; i <= scanMax; i++) {
             let testRules = {};
@@ -216,7 +225,7 @@
                 testRules[p] = patterns[Math.floor(Math.random() * patterns.length)];
             });
 
-            if (checkLogicFast(testRules, limit, size)) {
+            if (checkLogicFast(testRules, limit, size, groupsData)) {
                 patterns.forEach(p => {
                     const el = document.getElementById('rule_' + p);
                     if(el) el.value = testRules[p];
@@ -224,21 +233,23 @@
                 });
                 saveCurrentInputs();
                 renderLogic();
-                statusText.textContent = `✅ Tìm thấy sau ${i.toLocaleString()} lần thử.`;
+                let timeTotal = ((performance.now() - startTime)/1000).toFixed(2);
+                statusText.textContent = `✅ TÌM THẤY! Sau ${i.toLocaleString()} mẫu (${timeTotal} giây).`;
                 return;
             }
-            if (i % 5000 === 0) {
-                statusText.textContent = `⏳ Đang thử: ${i.toLocaleString()}...`;
-                await new Promise(r => setTimeout(r, 1));
+
+            // Cập nhật giao diện mỗi 20.000 mẫu để cực nhanh
+            if (i % 20000 === 0) {
+                statusText.textContent = `🚀 Đang quét: ${i.toLocaleString()}...`;
+                await new Promise(r => setTimeout(r, 0));
             }
         }
-        statusText.textContent = "❌ Không tìm thấy bộ nào.";
+        statusText.textContent = `❌ Đã quét ${scanMax.toLocaleString()} mẫu nhưng không đạt yêu cầu.`;
     }
 
     function renderLogic() {
         const size = parseInt(clusterSizeInput.value);
         const limit = parseInt(maxGapInput.value);
-        
         saveCurrentInputs();
         localStorage.setItem('clusterSize', size);
         localStorage.setItem('maxGapLimit', limit);
@@ -253,16 +264,13 @@
             let group = rawNumbers.substring(i, i + size);
             let rowIndex = Math.floor(i / size) + 1;
 
-            // Hiển thị số gốc
             for (let j = 0; j < size; j++) {
                 const div = document.createElement('div');
                 div.className = 'cell'; div.textContent = group[j] || "-";
                 numberGrid.appendChild(div);
             }
-            // Khoảng cách
             const sep = document.createElement('div'); numberGrid.appendChild(sep);
 
-            // Hiển thị dự đoán
             for (let j = 0; j < size; j++) {
                 const div = document.createElement('div');
                 div.className = 'cell label';
@@ -291,7 +299,6 @@
             idx.className = 'row-index'; idx.textContent = rowIndex;
             numberGrid.appendChild(idx);
 
-            // Chuẩn bị nhãn cho dòng tiếp theo
             let p = ""; for (let char of group) p += getNumType(char);
             if (p.length === size) {
                 let r = globalRules[p] || "";
